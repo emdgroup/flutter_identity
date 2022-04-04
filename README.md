@@ -1,6 +1,8 @@
 # Flutter identity example
 
 <img src="./screenshot.PNG" width="200" />
+<img src="./login_dialog.PNG" width="200" />
+<img src="./login_form.PNG" width="200" />
 
 Example implementation of the identity platform in flutter
 
