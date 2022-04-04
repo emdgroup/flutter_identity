@@ -1,5 +1,7 @@
 # Flutter identity example
 
+<img src="./screenshot.PNG" width="200" />
+
 Example implementation of the identity platform in flutter
 
 ## Getting Started
