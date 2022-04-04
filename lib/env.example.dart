@@ -1,0 +1,5 @@
+// This file contains the configuration for the app.
+
+String discoveryUrl = "";
+String clientId = "";
+String redirectUrl = "com.your.awesome-app://login-callback";
