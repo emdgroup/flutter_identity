@@ -38,7 +38,7 @@ class DesktopAuth with OAuthHandler {
 
     // Make sure the server supports the right code_challenge_methods_supported
     if (!discoveryResponse.codeChallengeMethodsSupported.contains("S256")) {
-      throw Exception("Server does not support S256 code_cahllenge_method.");
+      throw Exception("Server does not support S256 code_challenge_method.");
     }
 
     // Request the authorization URL
