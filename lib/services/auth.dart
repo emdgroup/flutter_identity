@@ -6,7 +6,7 @@ import 'package:emd_flutter_boilerplate/services/desktop/oauth_token_result.dart
 import 'package:emd_flutter_boilerplate/services/oauth_handler.dart';
 import 'package:emd_flutter_boilerplate/services/token_utils.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../env.dart';
@@ -36,7 +36,7 @@ class AuthService extends ChangeNotifier {
   //  Timer that refreshes the access token
   Timer? _refreshTimer;
 
-  late SharedPreferences prefs;
+  final _storage = const FlutterSecureStorage();
 
   late OAuthHandler _handler;
 
@@ -68,9 +68,8 @@ class AuthService extends ChangeNotifier {
   Future<void> _init() async {
     _status = AuthServiceStatus.loading;
     notifyListeners();
-    prefs = await SharedPreferences.getInstance();
 
-    if (hasRefreshToken) {
+    if (await hasRefreshToken) {
       // Theres a refresh token. Since we are starting. Fetch a new access token.
       await _refreshAccessToken();
     } else {
@@ -83,21 +82,25 @@ class AuthService extends ChangeNotifier {
     _startRefreshTimer();
   }
 
-  bool get hasRefreshToken => prefs.containsKey(prefsRefreshToken);
+  Future<bool> get hasRefreshToken async {
+    return (await _storage.read(key: prefsRefreshToken)) != null;
+  }
+
   bool get isLoggedIn => _status == AuthServiceStatus.loggedIn;
 
   // Token getters
-  String? get refreshToken => prefs.getString(prefsRefreshToken);
-  String? get accessToken => prefs.getString(prefsAccessToken);
-  String? get idToken => prefs.getString(prefsIdToken);
+  Future<String?> get refreshToken => _storage.read(key: prefsRefreshToken);
+  Future<String?> get accessToken => _storage.read(key: prefsAccessToken);
+  Future<String?> get idToken => _storage.read(key: prefsIdToken);
 
   // Return a map  of claims in the id token
-  Map<String, dynamic>? get idClaims =>
-      idToken != null ? getTokenPayload(idToken!) : null;
+  Future<Map<String, dynamic>?> get idClaims async {
+    return await idToken != null ? getTokenPayload((await idToken)!) : null;
+  }
 
   // Return the DateTime when the access token expires
-  DateTime? get accessTokenExpiresAt {
-    var expiry = prefs.getString(prefsAccessTokenExpiry);
+  Future<DateTime?> get accessTokenExpiresAt async {
+    var expiry = await _storage.read(key: prefsAccessTokenExpiry);
     if (expiry != null) {
       return DateTime.parse(expiry);
     }
@@ -109,10 +112,12 @@ class AuthService extends ChangeNotifier {
     _refreshTimer?.cancel();
 
     // Start a new timer
-    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
       // Check if the access token will expire (or has expired) in 1 minute
-      if (accessTokenExpiresAt != null &&
-          accessTokenExpiresAt!
+      var expiry = await accessTokenExpiresAt;
+
+      if (expiry != null &&
+          expiry
               .isBefore(DateTime.now().subtract(const Duration(minutes: 1)))) {
         // The access token has expired. Refresh it.
         try {
@@ -135,7 +140,7 @@ class AuthService extends ChangeNotifier {
       throw Exception("No refresh token");
     }
 
-    var result = await _handler.refreshAccessToken(refreshToken!);
+    var result = await _handler.refreshAccessToken((await refreshToken)!);
 
     // Store the new tokens
     _saveTokens(result);
@@ -145,21 +150,19 @@ class AuthService extends ChangeNotifier {
 
   // Persist all tokens in a TokenResponse
   void _saveTokens(OAuthTokenResult response) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    prefs.setString(prefsAccessToken, response.accessToken!);
-    prefs.setString(
-        prefsAccessTokenExpiry,
-        DateTime.now()
+    _storage.write(key: prefsAccessToken, value: response.accessToken!);
+    _storage.write(
+        key: prefsAccessTokenExpiry,
+        value: DateTime.now()
             .add(Duration(seconds: response.expiresIn))
             .toIso8601String());
 
     if (response.refreshToken != null) {
-      prefs.setString(prefsRefreshToken, response.refreshToken!);
+      _storage.write(key: prefsRefreshToken, value: response.refreshToken!);
     }
 
     if (response.idToken != null) {
-      prefs.setString(prefsIdToken, response.idToken!);
+      _storage.write(key: prefsIdToken, value: response.idToken!);
     }
   }
 

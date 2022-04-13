@@ -36,6 +36,12 @@ class AuthStatus extends StatefulWidget {
 class _AuthStatusState extends State<AuthStatus> {
   final AuthService _auth = AuthService();
 
+  String? _accesToken;
+  String? _idToken;
+  String? _refreshToken;
+  DateTime? _expiresAt;
+  Map<String, dynamic>? _idClaims;
+
   @override
   void initState() {
     _auth.addListener(_authChange);
@@ -48,8 +54,15 @@ class _AuthStatusState extends State<AuthStatus> {
     super.dispose();
   }
 
-  void _authChange() {
+  void _authChange() async {
     // Plain re-render
+
+    _accesToken = await _auth.accessToken;
+    _idToken = await _auth.idToken;
+    _expiresAt = await _auth.accessTokenExpiresAt;
+    _refreshToken = await _auth.refreshToken;
+    _idClaims = await _auth.idClaims;
+
     setState(() {});
   }
 
@@ -112,8 +125,7 @@ class _AuthStatusState extends State<AuthStatus> {
       const Divider(),
       ListTile(
         title: const Text("Access token expires"),
-        subtitle:
-            Text(_auth.accessTokenExpiresAt?.toIso8601String() ?? "Unknown"),
+        subtitle: Text(_expiresAt?.toIso8601String() ?? "Unknown"),
       ),
       ListTile(
         title: const Text("Force refresh"),
@@ -123,23 +135,23 @@ class _AuthStatusState extends State<AuthStatus> {
       const Divider(),
       ListTile(
           title: const Text("Access Token"),
-          subtitle: Text(_auth.accessToken?.substring(0, 16) ?? "null"),
-          onTap: () => _copy(_auth.accessToken ?? "null", context),
+          subtitle: Text(_accesToken?.substring(0, 16) ?? "null"),
+          onTap: () => _copy(_accesToken ?? "null", context),
           trailing: const Icon(Icons.copy)),
       ListTile(
           title: const Text("Refresh Token"),
-          subtitle: Text(_auth.refreshToken?.substring(0, 16) ?? "null"),
-          onTap: () => _copy(_auth.refreshToken ?? "null", context),
+          subtitle: Text(_refreshToken?.substring(0, 16) ?? "null"),
+          onTap: () => _copy(_refreshToken ?? "null", context),
           trailing: const Icon(Icons.copy)),
       ListTile(
           title: const Text("ID Token"),
-          subtitle: Text(_auth.idToken?.substring(0, 16) ?? "null"),
-          onTap: () => _copy(_auth.idToken ?? "null", context),
+          subtitle: Text(_idToken?.substring(0, 16) ?? "null"),
+          onTap: () => _copy(_idToken ?? "null", context),
           trailing: const Icon(Icons.copy)),
       const Divider(),
       ListTile(
         title: const Text("Claims"),
-        subtitle: Text(jsonEncode(_auth.idClaims)),
+        subtitle: Text(_idClaims == null ? jsonEncode(_idClaims) : "null"),
       ),
     ]);
   }
