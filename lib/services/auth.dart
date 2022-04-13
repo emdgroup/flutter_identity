@@ -1,11 +1,16 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:emd_flutter_boilerplate/services/desktop/desktop_auth.dart';
+import 'package:emd_flutter_boilerplate/services/desktop/oauth_token_result.dart';
+import 'package:emd_flutter_boilerplate/services/oauth_handler.dart';
 import 'package:emd_flutter_boilerplate/services/token_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../env.dart';
+import 'mobile/mobile_auth.dart';
 
 enum AuthServiceStatus {
   loading, // Initial state of the service
@@ -21,10 +26,8 @@ String prefsIdToken = "auth_service_id_token";
 String prefsAccessTokenExpiry = "auth_service_access_token_expiry";
 
 class AuthService extends ChangeNotifier {
-  final FlutterAppAuth appAuth = FlutterAppAuth();
-
+  // Service status
   AuthServiceStatus _status = AuthServiceStatus.loading;
-
   AuthServiceStatus get status => _status;
 
   // Scopes requested
@@ -35,7 +38,30 @@ class AuthService extends ChangeNotifier {
 
   late SharedPreferences prefs;
 
+  late OAuthHandler _handler;
+
   AuthService() {
+    if (Platform.isAndroid || Platform.isIOS) {
+      _handler = MobileAuth(
+        discoveryUrl: discoveryUrl,
+        clientId: clientId,
+        redirectUrl: redirectUrl,
+        scopes: scopes,
+      );
+    }
+
+    if (Platform.isMacOS || Platform.isWindows) {
+      _handler = DesktopAuth(
+        discoveryUrl: discoveryUrl,
+        clientId: clientId,
+        scopes: scopes,
+      );
+    }
+
+    if (_handler == null) {
+      throw Exception("Unsupported platform");
+    }
+
     _init();
   }
 
@@ -106,34 +132,27 @@ class AuthService extends ChangeNotifier {
 
   _refreshAccessToken() async {
     if (refreshToken == null) {
-      throw Exception("No refresh Token present.");
+      throw Exception("No refresh token");
     }
 
-    try {
-      final TokenResponse? result = await appAuth.token(TokenRequest(
-          clientId, redirectUrl,
-          discoveryUrl: discoveryUrl,
-          refreshToken: refreshToken,
-          scopes: scopes));
-      if (result != null) {
-        _saveTokens(result);
-        _status = AuthServiceStatus.loggedIn;
-        notifyListeners();
-      }
-    } catch (e) {
-      // Handle errors
-    }
+    var result = await _handler.refreshAccessToken(refreshToken!);
+
+    // Store the new tokens
+    _saveTokens(result);
+    _status = AuthServiceStatus.loggedIn;
+    notifyListeners();
   }
 
   // Persist all tokens in a TokenResponse
-  void _saveTokens(TokenResponse response) async {
+  void _saveTokens(OAuthTokenResult response) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    if (response.accessToken != null) {
-      prefs.setString(prefsAccessToken, response.accessToken!);
-      prefs.setString(prefsAccessTokenExpiry,
-          response.accessTokenExpirationDateTime!.toIso8601String());
-    }
+    prefs.setString(prefsAccessToken, response.accessToken!);
+    prefs.setString(
+        prefsAccessTokenExpiry,
+        DateTime.now()
+            .add(Duration(seconds: response.expiresIn))
+            .toIso8601String());
 
     if (response.refreshToken != null) {
       prefs.setString(prefsRefreshToken, response.refreshToken!);
@@ -145,28 +164,11 @@ class AuthService extends ChangeNotifier {
   }
 
   // Try to log the user in. Returns a future bool whether the attempt was successful.
-  Future<bool> login() async {
-    try {
-      final AuthorizationTokenResponse? result =
-          await appAuth.authorizeAndExchangeCode(
-        AuthorizationTokenRequest(
-          clientId,
-          redirectUrl,
-          discoveryUrl: discoveryUrl,
-          scopes: scopes,
-        ),
-      );
-
-      if (result != null) {
-        _saveTokens(result);
-        _status = AuthServiceStatus.loggedIn;
-        notifyListeners();
-      }
-      return true;
-    } catch (e) {
-      // Todo handle error
-    }
-    return false;
+  Future<void> login() async {
+    var result = await _handler.login();
+    _saveTokens(result);
+    _status = AuthServiceStatus.loggedIn;
+    notifyListeners();
   }
 
   Future<void> logout() async {

@@ -14,12 +14,21 @@ dependencies:
   cupertino_icons: ^1.0.2
   flutter_appauth: ^2.4.1
   shared_preferences: ^2.0.13
+  url_launcher: ^6.0.20
+  http: ^0.13.4
+  
+  json_annotation: ^4.4.0
+  crypto: ^3.0.1
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^1.0.0
+  json_serializable: ^6.1.5
+  build_runner: ^2.1.8
+
 
 flutter:
   uses-material-design: true
