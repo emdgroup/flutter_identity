@@ -4,8 +4,10 @@
 <img src="./screenshot.PNG" width="150" />
 <img src="./login_dialog.PNG" width="150" />
 <img src="./login_form.PNG" width="150" />
+<img src="./screenshot_desktop.png" width="150" />
 </p>
-Example implementation of the identity platform in flutter
+Example implementation of the identity platform in Flutter.
+
 
 ## Getting Started
 
