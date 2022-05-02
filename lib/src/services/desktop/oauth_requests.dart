@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:emd_flutter_boilerplate/services/desktop/desktop_auth.dart';
-import 'package:emd_flutter_boilerplate/services/desktop/oauth_discovery_response.dart';
-import 'package:emd_flutter_boilerplate/services/desktop/oauth_token_result.dart';
 import 'package:http/http.dart';
+
+import 'oauth_discovery_response.dart';
+import 'oauth_token_result.dart';
 
 Future<OAuthDiscoveryResponse> getOAuthDiscoveryResponse(
     {required String discoveryUrl}) async {

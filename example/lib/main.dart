@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:emd_flutter_boilerplate/services/auth.dart';
+import 'package:emd_flutter_boilerplate/env.dart';
+import 'package:emd_flutter_identity/emd_flutter_identity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -34,7 +35,12 @@ class AuthStatus extends StatefulWidget {
 }
 
 class _AuthStatusState extends State<AuthStatus> {
-  final AuthService _auth = AuthService();
+  final AuthService _auth = AuthService(
+    redirectUrl: redirectUrl,
+    discoveryUrl: discoveryUrl,
+    scopes: ["openid", "email"],
+    clientId: clientId,
+  );
 
   String? _accesToken;
   String? _idToken;

@@ -1,7 +1,7 @@
-import 'package:emd_flutter_boilerplate/services/oauth_handler.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 
 import '../desktop/oauth_token_result.dart';
+import '../oauth_handler.dart';
 
 class MobileAuth with OAuthHandler {
   final String discoveryUrl;

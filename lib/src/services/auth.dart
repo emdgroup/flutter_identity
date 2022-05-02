@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
-import 'package:emd_flutter_boilerplate/services/desktop/desktop_auth.dart';
-import 'package:emd_flutter_boilerplate/services/desktop/oauth_token_result.dart';
-import 'package:emd_flutter_boilerplate/services/oauth_handler.dart';
-import 'package:emd_flutter_boilerplate/services/token_utils.dart';
+import 'package:emd_flutter_identity/src/services/token_utils.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../env.dart';
+import 'desktop/desktop_auth.dart';
+import 'desktop/oauth_token_result.dart';
 import 'mobile/mobile_auth.dart';
+import 'oauth_handler.dart';
 
 enum AuthServiceStatus {
   loading, // Initial state of the service
@@ -40,7 +40,12 @@ class AuthService extends ChangeNotifier {
 
   late OAuthHandler _handler;
 
-  AuthService() {
+  AuthService({
+    required String discoveryUrl,
+    required String clientId,
+    required String redirectUrl,
+    required List<String> scopes,
+  }) {
     if (Platform.isAndroid || Platform.isIOS) {
       _handler = MobileAuth(
         discoveryUrl: discoveryUrl,
@@ -58,6 +63,7 @@ class AuthService extends ChangeNotifier {
       );
     }
 
+    // ignore: unnecessary_null_comparison
     if (_handler == null) {
       throw Exception("Unsupported platform");
     }
@@ -79,6 +85,19 @@ class AuthService extends ChangeNotifier {
     }
 
     // Start the refresh timer
+    _startRefreshTimer();
+
+    SystemChannels.lifecycle.setMessageHandler((msg) async {
+      if (msg == AppLifecycleState.resumed.toString()) {
+        resurrect();
+      }
+      return null;
+    });
+  }
+
+  void resurrect() {
+    // Restart timer
+
     _startRefreshTimer();
   }
 
@@ -107,47 +126,55 @@ class AuthService extends ChangeNotifier {
     return null;
   }
 
-  void _startRefreshTimer() {
+  Future<bool> get _shouldRefresh async {
+    // Refresh 1 minute early to compensate timing differences.
+    var buffer = const Duration(minutes: 1);
+    var expiry = await accessTokenExpiresAt;
+    return expiry != null && expiry.isBefore(DateTime.now().subtract(buffer));
+  }
+
+  Future<void> _refreshTimerTick() async {
+    if (await _shouldRefresh) {
+      // The access token has expired. Refresh it.
+      try {
+        await _refreshAccessToken();
+      } catch (e) {
+        // If refreshing fails, signal to the application that the user might not be logged in anymore
+        _status = AuthServiceStatus.loggedOut;
+      }
+    }
+    notifyListeners();
+  }
+
+  void _startRefreshTimer() async {
     // Cancel any existing timer
     _refreshTimer?.cancel();
-
+    await _refreshTimerTick();
     // Start a new timer
     _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
-      // Check if the access token will expire (or has expired) in 1 minute
-      var expiry = await accessTokenExpiresAt;
-
-      if (expiry != null &&
-          expiry
-              .isBefore(DateTime.now().subtract(const Duration(minutes: 1)))) {
-        // The access token has expired. Refresh it.
-        try {
-          _refreshAccessToken();
-          notifyListeners();
-        } catch (e) {
-          // If refreshing fails, signal to the application that the user might not be logged in anymore
-          _status = AuthServiceStatus.loggedOut;
-        }
-      }
+      await _refreshTimerTick();
     });
   }
 
+  /// Forces a refresh independent of the expiry time
   void forceRefresh() {
     _refreshAccessToken();
   }
 
-  _refreshAccessToken() async {
+  Future<void> _refreshAccessToken() async {
+    var refreshToken = await this.refreshToken;
     if (refreshToken == null) {
       throw Exception("No refresh token");
     }
 
-    var result = await _handler.refreshAccessToken((await refreshToken)!);
+    var result = await _handler.refreshAccessToken(refreshToken);
 
     // Store the new tokens
     _saveTokens(result);
     _status = AuthServiceStatus.loggedIn;
     notifyListeners();
   }
-
+  
   // Persist all tokens in a TokenResponse
   void _saveTokens(OAuthTokenResult response) async {
     _storage.write(key: prefsAccessToken, value: response.accessToken!);
@@ -175,11 +202,10 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.remove(prefsAccessToken);
-    prefs.remove(prefsRefreshToken);
-    prefs.remove(prefsIdToken);
-    prefs.remove(prefsAccessTokenExpiry);
+    _storage.delete(key: prefsAccessToken);
+    _storage.delete(key: prefsRefreshToken);
+    _storage.delete(key: prefsIdToken);
+    _storage.delete(key: prefsAccessTokenExpiry);
     _status = AuthServiceStatus.loggedOut;
     notifyListeners();
   }

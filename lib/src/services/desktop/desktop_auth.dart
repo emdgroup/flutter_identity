@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:emd_flutter_boilerplate/services/desktop/auth_utils.dart';
-import 'package:emd_flutter_boilerplate/services/oauth_handler.dart';
 import 'package:http/http.dart';
-
 import 'package:url_launcher/url_launcher.dart';
 
+import '../oauth_handler.dart';
+import 'auth_utils.dart';
 import 'callback_server.dart';
 import 'oauth_requests.dart';
 import 'oauth_token_result.dart';
