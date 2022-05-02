@@ -114,7 +114,9 @@ class AuthService extends ChangeNotifier {
 
   // Return a map  of claims in the id token
   Future<Map<String, dynamic>?> get idClaims async {
-    return await idToken != null ? getTokenPayload((await idToken)!) : null;
+    var token = await idToken;
+
+    return token != null ? getTokenPayload(token) : null;
   }
 
   // Return the DateTime when the access token expires
@@ -157,8 +159,8 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Forces a refresh independent of the expiry time
-  void forceRefresh() {
-    _refreshAccessToken();
+  Future<void> forceRefresh() async {
+    await _refreshAccessToken();
   }
 
   Future<void> _refreshAccessToken() async {
@@ -174,7 +176,7 @@ class AuthService extends ChangeNotifier {
     _status = AuthServiceStatus.loggedIn;
     notifyListeners();
   }
-  
+
   // Persist all tokens in a TokenResponse
   void _saveTokens(OAuthTokenResult response) async {
     _storage.write(key: prefsAccessToken, value: response.accessToken!);

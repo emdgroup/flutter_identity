@@ -157,7 +157,7 @@ class _AuthStatusState extends State<AuthStatus> {
       const Divider(),
       ListTile(
         title: const Text("Claims"),
-        subtitle: Text(_idClaims == null ? jsonEncode(_idClaims) : "null"),
+        subtitle: Text(_idClaims != null ? jsonEncode(_idClaims) : "null"),
       ),
     ]);
   }
