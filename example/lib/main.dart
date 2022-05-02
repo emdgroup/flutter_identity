@@ -35,12 +35,13 @@ class AuthStatus extends StatefulWidget {
 }
 
 class _AuthStatusState extends State<AuthStatus> {
-  final AuthService _auth = AuthService(
-    redirectUrl: redirectUrl,
-    discoveryUrl: discoveryUrl,
-    scopes: ["openid", "email"],
-    clientId: clientId,
-  );
+  final AuthService _auth = AuthService()
+    ..init(
+      redirectUrl: redirectUrl,
+      discoveryUrl: discoveryUrl,
+      scopes: ["openid", "email"],
+      clientId: clientId,
+    );
 
   String? _accesToken;
   String? _idToken;

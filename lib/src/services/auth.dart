@@ -40,7 +40,7 @@ class AuthService extends ChangeNotifier {
 
   late OAuthHandler _handler;
 
-  AuthService({
+  void init({
     required String discoveryUrl,
     required String clientId,
     required String redirectUrl,
