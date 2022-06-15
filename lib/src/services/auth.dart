@@ -40,12 +40,12 @@ class AuthService extends ChangeNotifier {
 
   late OAuthHandler _handler;
 
-  void init({
+  Future<void> init({
     required String discoveryUrl,
     required String clientId,
     required String redirectUrl,
     required List<String> scopes,
-  }) {
+  }) async {
     if (Platform.isAndroid || Platform.isIOS) {
       _handler = MobileAuth(
         discoveryUrl: discoveryUrl,
@@ -68,7 +68,7 @@ class AuthService extends ChangeNotifier {
       throw Exception("Unsupported platform");
     }
 
-    _init();
+    await _init();
   }
 
   Future<void> _init() async {
@@ -182,9 +182,7 @@ class AuthService extends ChangeNotifier {
     _storage.write(key: prefsAccessToken, value: response.accessToken!);
     _storage.write(
         key: prefsAccessTokenExpiry,
-        value: DateTime.now()
-            .add(Duration(seconds: response.expiresIn))
-            .toIso8601String());
+        value: DateTime.now().add(Duration(seconds: response.expiresIn)).toIso8601String());
 
     if (response.refreshToken != null) {
       _storage.write(key: prefsRefreshToken, value: response.refreshToken!);
