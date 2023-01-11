@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:emd_flutter_identity/src/services/token_utils.dart';
@@ -7,9 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'desktop/desktop_auth.dart';
 import 'desktop/oauth_token_result.dart';
-import 'mobile/mobile_auth.dart';
 import 'oauth_handler.dart';
 
 enum AuthServiceStatus {
@@ -38,35 +35,12 @@ class AuthService extends ChangeNotifier {
 
   final _storage = const FlutterSecureStorage();
 
-  late OAuthHandler _handler;
+  late OAuthHandler handler;
 
   Future<void> init({
-    required String discoveryUrl,
-    required String clientId,
-    required String redirectUrl,
-    required List<String> scopes,
+    required OAuthHandler handler,
   }) async {
-    if (Platform.isAndroid || Platform.isIOS) {
-      _handler = MobileAuth(
-        discoveryUrl: discoveryUrl,
-        clientId: clientId,
-        redirectUrl: redirectUrl,
-        scopes: scopes,
-      );
-    }
-
-    if (Platform.isMacOS || Platform.isWindows) {
-      _handler = DesktopAuth(
-        discoveryUrl: discoveryUrl,
-        clientId: clientId,
-        scopes: scopes,
-      );
-    }
-
-    // ignore: unnecessary_null_comparison
-    if (_handler == null) {
-      throw Exception("Unsupported platform");
-    }
+    this.handler = handler;
 
     await _init();
   }
@@ -169,7 +143,7 @@ class AuthService extends ChangeNotifier {
       throw Exception("No refresh token");
     }
 
-    var result = await _handler.refreshAccessToken(refreshToken);
+    var result = await handler.refreshAccessToken(refreshToken);
 
     // Store the new tokens
     _saveTokens(result);
@@ -182,7 +156,8 @@ class AuthService extends ChangeNotifier {
     _storage.write(key: prefsAccessToken, value: response.accessToken!);
     _storage.write(
         key: prefsAccessTokenExpiry,
-        value: DateTime.now().add(Duration(seconds: response.expiresIn)).toIso8601String());
+        value:
+            DateTime.now().add(Duration(seconds: response.expiresIn)).toIso8601String());
 
     if (response.refreshToken != null) {
       _storage.write(key: prefsRefreshToken, value: response.refreshToken!);
@@ -194,11 +169,19 @@ class AuthService extends ChangeNotifier {
   }
 
   // Try to log the user in. Returns a future bool whether the attempt was successful.
-  Future<void> login() async {
-    var result = await _handler.login();
-    _saveTokens(result);
-    _status = AuthServiceStatus.loggedIn;
-    notifyListeners();
+  Future<bool> login() async {
+    var result = await handler.login();
+    if (result != null) {
+      _saveTokens(result);
+      _status = AuthServiceStatus.loggedIn;
+      notifyListeners();
+      return true;
+    } else {
+      _status = AuthServiceStatus.loggedOut;
+
+      notifyListeners();
+    }
+    return false;
   }
 
   Future<void> logout() async {

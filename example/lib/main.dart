@@ -1,11 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:emd_flutter_boilerplate/env.dart';
 import 'package:emd_flutter_identity/emd_flutter_identity.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+var auth = AuthService();
+
 void main() {
+  auth.init(
+    handler: getOAuthHandler(),
+  );
   runApp(const App());
 }
 
@@ -15,16 +22,58 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'EMD Boilerplate',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: Scaffold(
-            appBar: AppBar(
-              title: const Text('EMD Identity Boilerplate'),
-            ),
-            body: const AuthStatus()));
+      title: 'EMD Boilerplate',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      initialRoute: "/",
+      onGenerateRoute: (settings) {
+        if (settings.name?.contains("/login-callback") == true) {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (context) => const LoginCallbackPage(),
+          );
+        }
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => Scaffold(
+              appBar: AppBar(
+                title: const Text('EMD Identity Boilerplate'),
+              ),
+              body: const AuthStatus()),
+        );
+      },
+    );
   }
+}
+
+OAuthHandler getOAuthHandler() {
+  if (kIsWeb) {
+    return WebAuth(
+      discoveryUrl: discoveryUrl,
+      clientId: clientId,
+      scopes: scopes,
+    );
+  } else {
+    if (Platform.isAndroid || Platform.isIOS) {
+      return MobileAuth(
+        discoveryUrl: discoveryUrl,
+        clientId: clientId,
+        redirectUrl: redirectUrl,
+        scopes: scopes,
+      );
+    }
+
+    if (Platform.isMacOS || Platform.isWindows) {
+      return DesktopAuth(
+        discoveryUrl: discoveryUrl,
+        clientId: clientId,
+        scopes: scopes,
+      );
+    }
+  }
+
+  throw Exception("Unsupported platform");
 }
 
 class AuthStatus extends StatefulWidget {
@@ -35,14 +84,6 @@ class AuthStatus extends StatefulWidget {
 }
 
 class _AuthStatusState extends State<AuthStatus> {
-  final AuthService _auth = AuthService()
-    ..init(
-      redirectUrl: redirectUrl,
-      discoveryUrl: discoveryUrl,
-      scopes: ["openid", "email"],
-      clientId: clientId,
-    );
-
   String? _accesToken;
   String? _idToken;
   String? _refreshToken;
@@ -51,30 +92,31 @@ class _AuthStatusState extends State<AuthStatus> {
 
   @override
   void initState() {
-    _auth.addListener(_authChange);
+    auth.addListener(_authChange);
+    Future.delayed(Duration.zero, _authChange);
     super.initState();
   }
 
   @override
   void dispose() {
-    _auth.removeListener(_authChange);
+    auth.removeListener(_authChange);
     super.dispose();
   }
 
   void _authChange() async {
     // Plain re-render
 
-    _accesToken = await _auth.accessToken;
-    _idToken = await _auth.idToken;
-    _expiresAt = await _auth.accessTokenExpiresAt;
-    _refreshToken = await _auth.refreshToken;
-    _idClaims = await _auth.idClaims;
+    _accesToken = await auth.accessToken;
+    _idToken = await auth.idToken;
+    _expiresAt = await auth.accessTokenExpiresAt;
+    _refreshToken = await auth.refreshToken;
+    _idClaims = await auth.idClaims;
 
     setState(() {});
   }
 
   String get _authStatusString {
-    switch (_auth.status) {
+    switch (auth.status) {
       case AuthServiceStatus.loading:
         return "Loading";
       case AuthServiceStatus.loggedIn:
@@ -87,20 +129,20 @@ class _AuthStatusState extends State<AuthStatus> {
   }
 
   Widget get _authAction {
-    switch (_auth.status) {
+    switch (auth.status) {
       case AuthServiceStatus.loading:
         return const CircularProgressIndicator();
       case AuthServiceStatus.loggedIn:
         return ListTile(
           title: const Text('Logout'),
           trailing: const Icon(Icons.logout),
-          onTap: _auth.logout,
+          onTap: auth.logout,
         );
       case AuthServiceStatus.loggedOut:
         return ListTile(
           title: const Text('Login'),
           trailing: const Icon(Icons.login),
-          onTap: _auth.login,
+          onTap: auth.login,
         );
       default:
         return const Text('Unknown');
@@ -115,7 +157,7 @@ class _AuthStatusState extends State<AuthStatus> {
 
   @override
   Widget build(BuildContext context) {
-    if (_auth.status == AuthServiceStatus.loading) {
+    if (auth.status == AuthServiceStatus.loading) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -137,7 +179,7 @@ class _AuthStatusState extends State<AuthStatus> {
       ListTile(
         title: const Text("Force refresh"),
         trailing: const Icon(Icons.refresh),
-        onTap: _auth.forceRefresh,
+        onTap: auth.forceRefresh,
       ),
       const Divider(),
       ListTile(
@@ -161,5 +203,32 @@ class _AuthStatusState extends State<AuthStatus> {
         subtitle: Text(_idClaims != null ? jsonEncode(_idClaims) : "null"),
       ),
     ]);
+  }
+}
+
+class LoginCallbackPage extends StatefulWidget {
+  const LoginCallbackPage({Key? key}) : super(key: key);
+
+  @override
+  State<LoginCallbackPage> createState() => _LoginCallbackPageState();
+}
+
+class _LoginCallbackPageState extends State<LoginCallbackPage> {
+  @override
+  void initState() {
+    super.initState();
+    _processLoginCallback();
+  }
+
+  void _processLoginCallback() async {
+    await auth.login();
+    Navigator.of(context).pushNamedAndRemoveUntil("/", (route) => false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
   }
 }
