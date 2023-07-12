@@ -1,0 +1,34 @@
+{
+    "devDependencies": {
+        "cz-conventional-changelog": "^3.3.0"
+    },
+    "name": "emd_flutter_identity",
+    "description": "A package for EMD SSO",
+    "version": "1.0.3",
+    "private": true,
+    "main": "index.js",
+    "directories": {
+        "lib": "lib",
+        "test": "test"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "commit": "cz",
+        "release": "standard-version && node dart_version.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/emdgroup/flutter_identity"
+    },
+    "author": "",
+    "license": "ISC",
+    "config": {
+        "commitizen": {
+            "path": "./node_modules/cz-conventional-changelog"
+        }
+    },
+    "dependencies": {
+        "standard-version": "^9.5.0",
+        "yaml": "^2.2.2"
+    }
+}
