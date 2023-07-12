@@ -1,53 +1,62 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:emd_flutter_identity/src/services/desktop/auth_utils.dart';
+import 'package:emd_flutter_identity/src/services/desktop/callback_server.dart';
+import 'package:emd_flutter_identity/src/services/desktop/oauth_requests.dart';
+import 'package:emd_flutter_identity/src/services/desktop/oauth_token_result.dart';
+import 'package:emd_flutter_identity/src/services/oauth_handler.dart';
 import 'package:http/http.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../oauth_handler.dart';
-import 'auth_utils.dart';
-import 'callback_server.dart';
-import 'oauth_requests.dart';
-import 'oauth_token_result.dart';
 // Needs to: open a web browser, get the code, and return it
 
+/// [DesktopAuth] is used to handle authentication for desktop apps
 class DesktopAuth with OAuthHandler {
-  final String discoveryUrl;
-  final String clientId;
-  final List<String> scopes;
-  final int port;
+  /// Creates a new [DesktopAuth] instance
+  DesktopAuth({
+    required String discoveryUrl,
+    required String clientId,
+    required List<String> scopes,
+    int port = 8080,
+  })  : _port = port,
+        _discoveryUrl = discoveryUrl,
+        _scopes = scopes,
+        _clientId = clientId;
 
-  DesktopAuth({required this.discoveryUrl, required this.clientId, this.port = 8080, required this.scopes});
+  final String _discoveryUrl;
+  final String _clientId;
+  final List<String> _scopes;
+  final int _port;
 
   @override
   Future<OAuthTokenResult> login() async {
-    String rawChallenge = generateChallenge();
+    final rawChallenge = generateChallenge();
 
-    String challengeHash = base64UrlEncode(hashChallenge(rawChallenge));
+    final challengeHash = base64UrlEncode(hashChallenge(rawChallenge));
 
     // Fetch the authorization URL
-    var discoveryResponse = await getOAuthDiscoveryResponse(
-      discoveryUrl: discoveryUrl,
+    final discoveryResponse = await getOAuthDiscoveryResponse(
+      discoveryUrl: _discoveryUrl,
     );
 
     // Make sure the server supports the right code_challenge_methods_supported
-    if (!discoveryResponse.codeChallengeMethodsSupported.contains("S256")) {
-      throw Exception("Server does not support S256 code_challenge_method.");
+    if (!discoveryResponse.codeChallengeMethodsSupported.contains('S256')) {
+      throw Exception('Server does not support S256 code_challenge_method.');
     }
 
     // Request the authorization URL
 
-    var authUrl = discoveryResponse.authorizationEndpoint;
+    final authUrl = discoveryResponse.authorizationEndpoint;
 
-    var tokenUrl = discoveryResponse.tokenEndpoint;
+    final tokenUrl = discoveryResponse.tokenEndpoint;
 
-    var query = {
-      "client_id": clientId,
-      "response_type": "code",
-      "redirect_uri": "http://localhost:8080/login-callback",
-      "code_challenge": challengeHash,
-      "code_challenge_method": "S256",
-      "scope": "openid",
+    final query = {
+      'client_id': _clientId,
+      'response_type': 'code',
+      'redirect_uri': 'http://localhost:8080/login-callback',
+      'code_challenge': challengeHash,
+      'code_challenge_method': 'S256',
+      'scope': _scopes.join(' '),
     };
 
     // Get the auth url
@@ -59,38 +68,47 @@ class DesktopAuth with OAuthHandler {
 
     // Setup a local server to listen for the callback
 
-    var code = await setupCallbackServer(port: port);
+    final code = await setupCallbackServer(port: _port);
 
     // get the auth token
-    return fetchTokens(authCode: code, rawChallenge: rawChallenge, clientId: clientId, tokenUrl: tokenUrl);
+    return fetchTokens(
+      authCode: code,
+      rawChallenge: rawChallenge,
+      clientId: _clientId,
+      tokenUrl: tokenUrl,
+    );
   }
 
   @override
   Future<OAuthTokenResult> refreshAccessToken(String refreshToken) async {
-    var discoveryResponse = await getOAuthDiscoveryResponse(
-      discoveryUrl: discoveryUrl,
+    final discoveryResponse = await getOAuthDiscoveryResponse(
+      discoveryUrl: _discoveryUrl,
     );
 
-    var tokenUrl = discoveryResponse.tokenEndpoint;
+    final tokenUrl = discoveryResponse.tokenEndpoint;
 
-    var query = {
-      "client_id": clientId,
-      "grant_type": "refresh_token",
-      "refresh_token": refreshToken,
+    final query = {
+      'client_id': _clientId,
+      'grant_type': 'refresh_token',
+      'refresh_token': refreshToken,
     };
 
-    var url = Uri.parse(tokenUrl);
+    final url = Uri.parse(tokenUrl);
 
-    var res = await post(url,
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: query);
+    final res = await post(
+      url,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: query,
+    );
 
     if (res.statusCode != 200) {
-      throw Exception("Failed to fetch tokens.");
+      throw Exception('Failed to fetch tokens.');
     }
 
-    return OAuthTokenResult.fromJson(json.decode(res.body));
+    return OAuthTokenResult.fromJson(
+      json.decode(res.body) as Map<String, dynamic>,
+    );
   }
 }

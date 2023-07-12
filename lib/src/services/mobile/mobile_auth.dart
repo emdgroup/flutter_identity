@@ -1,42 +1,46 @@
+import 'package:emd_flutter_identity/src/services/desktop/oauth_token_result.dart';
+import 'package:emd_flutter_identity/src/services/oauth_handler.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 
-import '../desktop/oauth_token_result.dart';
-import '../oauth_handler.dart';
-
+/// [MobileAuth] is used to handle authentication for desktop apps
 class MobileAuth with OAuthHandler {
-  final String discoveryUrl;
-  final String clientId;
-  final String redirectUrl;
-  final List<String> scopes;
-
-  final FlutterAppAuth appAuth = FlutterAppAuth();
-
+  /// Initialize mobile auth with the required parameters
   MobileAuth({
-    required this.discoveryUrl,
-    required this.clientId,
-    required this.redirectUrl,
-    required this.scopes,
-  });
+    required String discoveryUrl,
+    required String clientId,
+    required String redirectUrl,
+    required List<String> scopes,
+  })  : _scopes = scopes,
+        _redirectUrl = redirectUrl,
+        _clientId = clientId,
+        _discoveryUrl = discoveryUrl;
+  final String _discoveryUrl;
+  final String _clientId;
+  final String _redirectUrl;
+  final List<String> _scopes;
+
+  final FlutterAppAuth _appAuth = FlutterAppAuth();
 
   @override
   Future<OAuthTokenResult> login() async {
-    final AuthorizationTokenResponse? result =
-        await appAuth.authorizeAndExchangeCode(AuthorizationTokenRequest(
-      clientId,
-      redirectUrl,
-      discoveryUrl: discoveryUrl,
-      scopes: scopes,
-    ));
+    final result = await _appAuth.authorizeAndExchangeCode(
+      AuthorizationTokenRequest(
+        _clientId,
+        _redirectUrl,
+        discoveryUrl: _discoveryUrl,
+        scopes: _scopes,
+      ),
+    );
     if (result == null) {
-      throw Exception("Failed to login. No result was returned");
+      throw Exception('Failed to login. No result was returned');
     }
     return OAuthTokenResult(
-      accessToken: result.accessToken!,
-      refreshToken: result.refreshToken!,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      idToken: result.idToken,
       expiresIn: result.accessTokenExpirationDateTime!
           .difference(DateTime.now())
           .inSeconds,
-      idToken: result.idToken!,
     );
   }
 
@@ -44,18 +48,22 @@ class MobileAuth with OAuthHandler {
   Future<OAuthTokenResult> refreshAccessToken(
     String refreshToken,
   ) async {
-    final TokenResponse? result = await appAuth.token(TokenRequest(
-        clientId, redirectUrl,
-        discoveryUrl: discoveryUrl,
+    final result = await _appAuth.token(
+      TokenRequest(
+        _clientId,
+        _redirectUrl,
+        discoveryUrl: _discoveryUrl,
         refreshToken: refreshToken,
-        scopes: scopes));
+        scopes: _scopes,
+      ),
+    );
 
     if (result == null) {
-      throw Exception("Failed to refresh access token. No result was returned");
+      throw Exception('Failed to refresh access token. No result was returned');
     }
 
     return OAuthTokenResult(
-      accessToken: result.accessToken!,
+      accessToken: result.accessToken,
       refreshToken: result.refreshToken,
       expiresIn: result.accessTokenExpirationDateTime!
           .difference(DateTime.now())

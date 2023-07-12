@@ -1,47 +1,45 @@
 import 'dart:async';
-import 'dart:ui';
 
+import 'package:emd_flutter_identity/src/services/desktop/oauth_token_result.dart';
+import 'package:emd_flutter_identity/src/services/oauth_handler.dart';
 import 'package:emd_flutter_identity/src/services/token_utils.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'desktop/oauth_token_result.dart';
-import 'oauth_handler.dart';
-
+/// The current status of the [AuthService]
 enum AuthServiceStatus {
-  loading, // Initial state of the service
-  loggedIn, // Logged in
-  loggedOut, // Logged out
+  /// Initial state of the service
+  loading,
 
+  /// Logged in
+  loggedIn,
+
+  /// Logged out
+  loggedOut,
 }
 
 // Preference keys for storing the tokens.
-String prefsAccessToken = "auth_service_access_token";
-String prefsRefreshToken = "auth_service_refresh_token";
-String prefsIdToken = "auth_service_id_token";
-String prefsAccessTokenExpiry = "auth_service_access_token_expiry";
+String _prefsAccessToken = 'auth_service_access_token';
+String _prefsRefreshToken = 'auth_service_refresh_token';
+String _prefsIdToken = 'auth_service_id_token';
+String _prefsAccessTokenExpiry = 'auth_service_access_token_expiry';
 
+/// [AuthService] is used to handle authentication it automatically
+///  refreshes tokens when needed.
 class AuthService extends ChangeNotifier {
   // Service status
   AuthServiceStatus _status = AuthServiceStatus.loading;
+
+  /// The current status of the [AuthService]
   AuthServiceStatus get status => _status;
-
-  // Scopes requested
-  List<String> scopes = ["openid", "email"];
-
-  //  Timer that refreshes the access token
-  Timer? _refreshTimer;
 
   final _storage = const FlutterSecureStorage();
 
-  late OAuthHandler handler;
+  late OAuthHandler _handler;
 
-  Future<void> init({
-    required OAuthHandler handler,
-  }) async {
-    this.handler = handler;
-
+  /// Initialize the service with the platform specific handler
+  Future<void> init({required OAuthHandler handler}) async {
+    _handler = handler;
     await _init();
   }
 
@@ -50,52 +48,49 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     if (await hasRefreshToken) {
-      // Theres a refresh token. Since we are starting. Fetch a new access token.
+      // Theres a refresh token. Since we are starting.
+      // Fetch a new access token.
       await _refreshAccessToken();
     } else {
       // No refresh token. We are logged out.
       _status = AuthServiceStatus.loggedOut;
       notifyListeners();
     }
-
-    // Start the refresh timer
-    _startRefreshTimer();
-
-    SystemChannels.lifecycle.setMessageHandler((msg) async {
-      if (msg == AppLifecycleState.resumed.toString()) {
-        resurrect();
-      }
-      return null;
-    });
   }
 
-  void resurrect() {
-    // Restart timer
-
-    _startRefreshTimer();
-  }
-
+  /// Whether there is a refresh token stored
   Future<bool> get hasRefreshToken async {
-    return (await _storage.read(key: prefsRefreshToken)) != null;
+    return (await _storage.read(key: _prefsRefreshToken)) != null;
   }
 
+  /// Whether the user is logged in
   bool get isLoggedIn => _status == AuthServiceStatus.loggedIn;
 
-  // Token getters
-  Future<String?> get refreshToken => _storage.read(key: prefsRefreshToken);
-  Future<String?> get accessToken => _storage.read(key: prefsAccessToken);
-  Future<String?> get idToken => _storage.read(key: prefsIdToken);
+  /// Get the current refresh token
+  Future<String?> get refreshToken => _storage.read(key: _prefsRefreshToken);
 
-  // Return a map  of claims in the id token
+  /// Get the current access token, refreshes is if needed
+  Future<String?> get accessToken async {
+    if (await _shouldRefresh) {
+      await _refreshAccessToken();
+    }
+
+    return _storage.read(key: _prefsAccessToken);
+  }
+
+  /// Get the current id token
+  Future<String?> get idToken => _storage.read(key: _prefsIdToken);
+
+  /// Return a map  of claims in the id token
   Future<Map<String, dynamic>?> get idClaims async {
-    var token = await idToken;
+    final token = await idToken;
 
     return token != null ? getTokenPayload(token) : null;
   }
 
-  // Return the DateTime when the access token expires
+  /// Return the DateTime when the access token expires
   Future<DateTime?> get accessTokenExpiresAt async {
-    var expiry = await _storage.read(key: prefsAccessTokenExpiry);
+    final expiry = await _storage.read(key: _prefsAccessTokenExpiry);
     if (expiry != null) {
       return DateTime.parse(expiry);
     }
@@ -104,32 +99,9 @@ class AuthService extends ChangeNotifier {
 
   Future<bool> get _shouldRefresh async {
     // Refresh 1 minute early to compensate timing differences.
-    var buffer = const Duration(minutes: 1);
-    var expiry = await accessTokenExpiresAt;
+    const buffer = Duration(minutes: 1);
+    final expiry = await accessTokenExpiresAt;
     return expiry != null && expiry.isBefore(DateTime.now().subtract(buffer));
-  }
-
-  Future<void> _refreshTimerTick() async {
-    if (await _shouldRefresh) {
-      // The access token has expired. Refresh it.
-      try {
-        await _refreshAccessToken();
-      } catch (e) {
-        // If refreshing fails, signal to the application that the user might not be logged in anymore
-        _status = AuthServiceStatus.loggedOut;
-      }
-    }
-    notifyListeners();
-  }
-
-  void _startRefreshTimer() async {
-    // Cancel any existing timer
-    _refreshTimer?.cancel();
-    await _refreshTimerTick();
-    // Start a new timer
-    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
-      await _refreshTimerTick();
-    });
   }
 
   /// Forces a refresh independent of the expiry time
@@ -138,41 +110,47 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _refreshAccessToken() async {
-    var refreshToken = await this.refreshToken;
+    final refreshToken = await this.refreshToken;
     if (refreshToken == null) {
-      throw Exception("No refresh token");
+      throw Exception('No refresh token');
     }
 
-    var result = await handler.refreshAccessToken(refreshToken);
+    final result = await _handler.refreshAccessToken(refreshToken);
 
     // Store the new tokens
-    _saveTokens(result);
+    await _saveTokens(result);
     _status = AuthServiceStatus.loggedIn;
     notifyListeners();
   }
 
   // Persist all tokens in a TokenResponse
-  void _saveTokens(OAuthTokenResult response) async {
-    _storage.write(key: prefsAccessToken, value: response.accessToken!);
-    _storage.write(
-        key: prefsAccessTokenExpiry,
-        value:
-            DateTime.now().add(Duration(seconds: response.expiresIn)).toIso8601String());
+  Future<void> _saveTokens(OAuthTokenResult response) async {
+    await _storage.write(key: _prefsAccessToken, value: response.accessToken);
+    await _storage.write(
+      key: _prefsAccessTokenExpiry,
+      value: DateTime.now()
+          .add(Duration(seconds: response.expiresIn))
+          .toIso8601String(),
+    );
 
     if (response.refreshToken != null) {
-      _storage.write(key: prefsRefreshToken, value: response.refreshToken!);
+      await _storage.write(
+        key: _prefsRefreshToken,
+        value: response.refreshToken,
+      );
     }
 
     if (response.idToken != null) {
-      _storage.write(key: prefsIdToken, value: response.idToken!);
+      await _storage.write(key: _prefsIdToken, value: response.idToken);
     }
   }
 
-  // Try to log the user in. Returns a future bool whether the attempt was successful.
+  /// Try to log the user in. Returns a
+  /// future bool whether the attempt was successful.
   Future<bool> login() async {
-    var result = await handler.login();
+    final result = await _handler.login();
     if (result != null) {
-      _saveTokens(result);
+      await _saveTokens(result);
       _status = AuthServiceStatus.loggedIn;
       notifyListeners();
       return true;
@@ -184,11 +162,12 @@ class AuthService extends ChangeNotifier {
     return false;
   }
 
+  /// Log the user out, deletes all tokens
   Future<void> logout() async {
-    _storage.delete(key: prefsAccessToken);
-    _storage.delete(key: prefsRefreshToken);
-    _storage.delete(key: prefsIdToken);
-    _storage.delete(key: prefsAccessTokenExpiry);
+    await _storage.delete(key: _prefsAccessToken);
+    await _storage.delete(key: _prefsRefreshToken);
+    await _storage.delete(key: _prefsIdToken);
+    await _storage.delete(key: _prefsAccessTokenExpiry);
     _status = AuthServiceStatus.loggedOut;
     notifyListeners();
   }

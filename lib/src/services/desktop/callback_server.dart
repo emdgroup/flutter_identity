@@ -1,22 +1,23 @@
 import 'dart:async';
 import 'dart:io';
 
+/// Sets up a callback server at localhost:8080 and returns the code
 Future<String> setupCallbackServer({int port = 8080}) async {
   // Launch a server at localhost:8080
   final address = InternetAddress.loopbackIPv4;
 
-  var completer = Completer<String>();
+  final completer = Completer<String>();
 
-  var server = await HttpServer.bind(address, port);
+  final server = await HttpServer.bind(address, port);
 
-  await for (HttpRequest request in server) {
-    if (request.requestedUri.path == "/login-callback") {
+  await for (final HttpRequest request in server) {
+    if (request.requestedUri.path == '/login-callback') {
       // Get the code
-      var code = request.uri.queryParameters["code"];
+      final code = request.uri.queryParameters['code'];
       if (code != null) {
         completer.complete(code);
         // Close the server
-        server.close();
+        await server.close();
       }
     }
     request.response.write('Login complete. You can close this window.');

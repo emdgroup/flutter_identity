@@ -1,18 +1,19 @@
 import 'dart:convert';
 
+/// [getTokenPayload] returns the payload of a JWT token
 Map<String, dynamic>? getTokenPayload(String token) {
-  var split = token.split(".");
+  final split = token.split('.');
   if (split.length != 3) {
-    throw Exception("Invalid token");
+    throw Exception('Invalid token');
   }
-  var payload = split[1];
-  var decoded = _decodeBase64(payload);
-  var json = jsonDecode(decoded);
-  return json;
+  final payload = split[1];
+  final decoded = _decodeBase64(payload);
+  final json = jsonDecode(decoded);
+  return json as Map<String, dynamic>;
 }
 
 String _decodeBase64(String str) {
-  String output = str.replaceAll('-', '+').replaceAll('_', '/');
+  var output = str.replaceAll('-', '+').replaceAll('_', '/');
 
   switch (output.length % 4) {
     case 0:
