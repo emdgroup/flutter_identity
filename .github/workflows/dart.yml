@@ -37,7 +37,7 @@ jobs:
       - name: Install node and npm
         uses: actions/setup-node@v1
         with:
-          node-version: "12.x"
+          node-version: 14
 
       # Add git config to allow git to push tags
       - name: Configure git
