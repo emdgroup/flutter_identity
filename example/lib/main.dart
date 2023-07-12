@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 var auth = AuthService();
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   auth.init(
     handler: getOAuthHandler(),
   );
