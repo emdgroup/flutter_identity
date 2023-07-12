@@ -19,7 +19,7 @@ class MobileAuth with OAuthHandler {
   final String _redirectUrl;
   final List<String> _scopes;
 
-  final FlutterAppAuth _appAuth = FlutterAppAuth();
+  final FlutterAppAuth _appAuth = const FlutterAppAuth();
 
   @override
   Future<OAuthTokenResult> login() async {
