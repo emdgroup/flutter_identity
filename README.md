@@ -1,4 +1,7 @@
-# Flutter identity example
+[![style: very good analysis](https://img.shields.io/badge/style-very_good_analysis-B22C89.svg)](https://pub.dev/packages/very_good_analysis)
+[![Dart](https://github.com/emdgroup/flutter_identity/actions/workflows/dart.yml/badge.svg)](https://github.com/emdgroup/flutter_identity/actions/workflows/dart.yml)
+
+# Flutter Identity
 
 <p float="left">
 <img src="./screenshot.PNG" width="150" />
@@ -41,4 +44,5 @@ Since `flutter_appauth` currently does not support running on web platforms ther
 - The app requests the tokens with the authentication code and raw challenge to verify the request
 
 ℹ️ The default port for the local loopback server is 8080
+
 ℹ️ The url will be opened using the `url_launcher` package. This opens the default browser of the platform by default.
