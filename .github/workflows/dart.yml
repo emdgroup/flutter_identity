@@ -51,10 +51,5 @@ jobs:
       - name: Run release
         run: npm run release
 
-      - name: Commit changes
-        run: |
-          git add .
-          git commit -m "chore: write version numbers"
-
       - name: Push tags
         run: git push --follow-tags origin main
