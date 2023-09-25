@@ -1,6 +1,6 @@
 name: emd_flutter_identity
 description: Auth components for the emd digital identity service
-version: 1.0.7
+version: 1.0.8
 homepage: null
 environment:
   sdk: ">=2.16.2 <3.0.0"
