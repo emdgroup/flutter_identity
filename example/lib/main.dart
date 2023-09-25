@@ -54,6 +54,7 @@ OAuthHandler getOAuthHandler() {
       discoveryUrl: discoveryUrl,
       clientId: clientId,
       scopes: scopes,
+      logoutUrl: logoutUrl
     );
   } else {
     if (Platform.isAndroid || Platform.isIOS) {
@@ -61,6 +62,7 @@ OAuthHandler getOAuthHandler() {
         discoveryUrl: discoveryUrl,
         clientId: clientId,
         redirectUrl: redirectUrl,
+        logoutUrl: logoutUrl,
         scopes: scopes,
       );
     }
@@ -68,6 +70,7 @@ OAuthHandler getOAuthHandler() {
     if (Platform.isMacOS || Platform.isWindows) {
       return DesktopAuth(
         discoveryUrl: discoveryUrl,
+        logoutUrl: logoutUrl,
         clientId: clientId,
         scopes: scopes,
       );

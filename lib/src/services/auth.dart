@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:emd_flutter_identity/src/services/desktop/oauth_token_result.dart';
+import 'package:emd_flutter_identity/src/services/oauth/oauth_token_result.dart';
 import 'package:emd_flutter_identity/src/services/oauth_handler.dart';
 import 'package:emd_flutter_identity/src/services/token_utils.dart';
 import 'package:flutter/foundation.dart';
@@ -164,6 +164,11 @@ class AuthService extends ChangeNotifier {
 
   /// Log the user out, deletes all tokens
   Future<void> logout() async {
+    final accessToken = await this.accessToken;
+    if (accessToken == null) {
+      throw Exception('No access token to logout');
+    }
+    await _handler.logout(accessToken);
     await _storage.delete(key: _prefsAccessToken);
     await _storage.delete(key: _prefsRefreshToken);
     await _storage.delete(key: _prefsIdToken);

@@ -1,4 +1,5 @@
-import 'package:emd_flutter_identity/src/services/desktop/oauth_token_result.dart';
+import 'package:emd_flutter_identity/src/services/oauth/oauth_requests.dart';
+import 'package:emd_flutter_identity/src/services/oauth/oauth_token_result.dart';
 import 'package:emd_flutter_identity/src/services/oauth_handler.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 
@@ -7,16 +8,19 @@ class MobileAuth with OAuthHandler {
   /// Initialize mobile auth with the required parameters
   MobileAuth({
     required String discoveryUrl,
+    required String logoutUrl,
     required String clientId,
     required String redirectUrl,
     required List<String> scopes,
   })  : _scopes = scopes,
         _redirectUrl = redirectUrl,
         _clientId = clientId,
+        _logoutUrl = logoutUrl,
         _discoveryUrl = discoveryUrl;
   final String _discoveryUrl;
   final String _clientId;
   final String _redirectUrl;
+  final String _logoutUrl;
   final List<String> _scopes;
 
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
@@ -70,5 +74,10 @@ class MobileAuth with OAuthHandler {
           .inSeconds,
       idToken: result.idToken,
     );
+  }
+
+  @override
+  Future<void> logout(String accessToken) async {
+    await logoutIdp(logoutUrl: _logoutUrl, clientId: _clientId, accessToken: accessToken);
   }
 }
