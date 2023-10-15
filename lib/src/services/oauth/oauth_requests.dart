@@ -24,13 +24,8 @@ Future<void> logoutIdp({
   required String logoutUrl,
   required String clientId,
   required String accessToken,
+  Map<String, String>? query,
 }) async {
-  final query = {
-    'client_id': '9qblp3sv3p352knmloa48qku7',
-    'logout_uri':
-        'https://login.microsoftonline.com/db76fb59-a377-4120-bc54-59dead7d39c9/oauth2/v2.0/logout',
-  };
-
   final uri = Uri.https('idp.emddigital.com', '/logout', query);
 
   await launchUrl(uri, mode: LaunchMode.externalApplication);
