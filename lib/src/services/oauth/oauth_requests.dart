@@ -33,15 +33,7 @@ Future<void> logoutIdp({
 
   final uri = Uri.https('idp.emddigital.com', '/logout', query);
 
-  await launchUrl(uri);
-
-  /*await launchUrl(
-    Uri.parse(logoutUrl).replace(
-      queryParameters: {
-        'client_id': clientId,
-      },
-    ),
-  );*/
+  await launchUrl(uri, mode: LaunchMode.externalApplication);
 }
 
 /// fetches the token with the code returned from the auth process

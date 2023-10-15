@@ -78,6 +78,7 @@ class MobileAuth with OAuthHandler {
 
   @override
   Future<void> logout(String accessToken) async {
-    await logoutIdp(logoutUrl: _logoutUrl, clientId: _clientId, accessToken: accessToken);
+    await logoutIdp(
+        logoutUrl: _logoutUrl, clientId: _clientId, accessToken: accessToken);
   }
 }
