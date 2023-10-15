@@ -168,12 +168,12 @@ class AuthService extends ChangeNotifier {
     if (accessToken == null) {
       throw Exception('No access token to logout');
     }
-    await _handler.logout(accessToken);
     await _storage.delete(key: _prefsAccessToken);
     await _storage.delete(key: _prefsRefreshToken);
     await _storage.delete(key: _prefsIdToken);
     await _storage.delete(key: _prefsAccessTokenExpiry);
     _status = AuthServiceStatus.loggedOut;
+
     notifyListeners();
   }
 }

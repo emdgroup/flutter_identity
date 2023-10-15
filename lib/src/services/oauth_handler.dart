@@ -7,7 +7,4 @@ abstract class OAuthHandler {
 
   /// Refresh the access token
   Future<OAuthTokenResult> refreshAccessToken(String refreshToken);
-
-  /// Logout
-  Future<void> logout(String accessToken);
 }

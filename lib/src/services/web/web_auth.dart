@@ -14,7 +14,6 @@ import 'package:url_launcher/url_launcher.dart';
 class WebAuth with OAuthHandler {
   /// Creates a new [WebAuth] instance
   WebAuth({
-    required String logoutUrl,
     required String discoveryUrl,
     required String clientId,
     required List<String> scopes,
@@ -22,10 +21,8 @@ class WebAuth with OAuthHandler {
   })  : _scopes = scopes,
         _redirectUrl = redirectUrl,
         _clientId = clientId,
-        _logoutUrl = logoutUrl,
         _discoveryUrl = discoveryUrl;
 
-  final String _logoutUrl;
   final String _discoveryUrl;
   final _storage = const FlutterSecureStorage();
   final String _clientId;
@@ -124,10 +121,5 @@ class WebAuth with OAuthHandler {
     return OAuthTokenResult.fromJson(
       json.decode(res.body) as Map<String, dynamic>,
     );
-  }
-
-  @override
-  Future<void> logout( String accessToken) async {
-    await logoutIdp(logoutUrl: _logoutUrl, clientId: _clientId, accessToken: accessToken );
   }
 }

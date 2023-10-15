@@ -19,18 +19,6 @@ Future<OAuthDiscoveryResponse> getOAuthDiscoveryResponse({
   );
 }
 
-/// logs the user out of the idp
-Future<void> logoutIdp({
-  required String logoutUrl,
-  required String clientId,
-  required String accessToken,
-  Map<String, String>? query,
-}) async {
-  final uri = Uri.https('idp.emddigital.com', '/logout', query);
-
-  await launchUrl(uri, mode: LaunchMode.externalApplication);
-}
-
 /// fetches the token with the code returned from the auth process
 Future<OAuthTokenResult> fetchTokens({
   required String authCode,

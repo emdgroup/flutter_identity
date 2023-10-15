@@ -14,18 +14,15 @@ import 'package:url_launcher/url_launcher.dart';
 class DesktopAuth with OAuthHandler {
   /// Creates a new [DesktopAuth] instance
   DesktopAuth({
-    required String logoutUrl,
     required String discoveryUrl,
     required String clientId,
     required List<String> scopes,
     int port = 8080,
   })  : _port = port,
         _discoveryUrl = discoveryUrl,
-        _logoutUrl = logoutUrl,
         _scopes = scopes,
         _clientId = clientId;
 
-  final String _logoutUrl;
   final String _discoveryUrl;
   final String _clientId;
   final List<String> _scopes;
@@ -113,15 +110,6 @@ class DesktopAuth with OAuthHandler {
 
     return OAuthTokenResult.fromJson(
       json.decode(res.body) as Map<String, dynamic>,
-    );
-  }
-
-  @override
-  Future<void> logout(String accessToken) async {
-    await logoutIdp(
-      logoutUrl: _logoutUrl,
-      clientId: _clientId,
-      accessToken: accessToken,
     );
   }
 }
