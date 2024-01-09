@@ -1,4 +1,4 @@
-import 'package:emd_flutter_identity/src/services/desktop/oauth_token_result.dart';
+import 'package:emd_flutter_identity/src/services/oauth/oauth_token_result.dart';
 import 'package:emd_flutter_identity/src/services/oauth_handler.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 
@@ -17,6 +17,7 @@ class MobileAuth with OAuthHandler {
   final String _discoveryUrl;
   final String _clientId;
   final String _redirectUrl;
+
   final List<String> _scopes;
 
   final FlutterAppAuth _appAuth = const FlutterAppAuth();

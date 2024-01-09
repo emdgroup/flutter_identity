@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:emd_flutter_identity/src/services/desktop/auth_utils.dart';
-import 'package:emd_flutter_identity/src/services/desktop/oauth_requests.dart';
-import 'package:emd_flutter_identity/src/services/desktop/oauth_token_result.dart';
+import 'package:emd_flutter_identity/src/services/oauth/oauth_requests.dart';
+import 'package:emd_flutter_identity/src/services/oauth/oauth_token_result.dart';
 import 'package:emd_flutter_identity/src/services/oauth_handler.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart';
@@ -17,16 +17,17 @@ class WebAuth with OAuthHandler {
     required String discoveryUrl,
     required String clientId,
     required List<String> scopes,
-    String? redirectUrl,
+    String redirectUrl = 'http://localhost:8080/#/login-callback',
   })  : _scopes = scopes,
         _redirectUrl = redirectUrl,
         _clientId = clientId,
         _discoveryUrl = discoveryUrl;
+
   final String _discoveryUrl;
   final _storage = const FlutterSecureStorage();
   final String _clientId;
   final List<String> _scopes;
-  final String? _redirectUrl;
+  final String _redirectUrl;
 
   @override
   Future<OAuthTokenResult?> login() async {
@@ -51,6 +52,7 @@ class WebAuth with OAuthHandler {
         authCode: location.queryParameters['code']!,
         rawChallenge: rawChallenge,
         clientId: _clientId,
+        redirectUrl: _redirectUrl,
         tokenUrl: discoveryResponse.tokenEndpoint,
       );
     }
@@ -67,8 +69,7 @@ class WebAuth with OAuthHandler {
     final query = {
       'client_id': _clientId,
       'response_type': 'code',
-      'redirect_uri': _redirectUrl ??
-          '${window.location.protocol}//${window.location.host}/#/login-callback',
+      'redirect_uri': _redirectUrl,
       'code_challenge': challengeHash,
       'code_challenge_method': 'S256',
       'scope': _scopes.join(' '),

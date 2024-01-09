@@ -1,4 +1,4 @@
-import 'package:emd_flutter_identity/src/services/desktop/oauth_token_result.dart';
+import 'package:emd_flutter_identity/src/services/oauth/oauth_token_result.dart';
 
 /// [OAuthHandler] is used to handle authentication for the different platforms
 abstract class OAuthHandler {
