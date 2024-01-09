@@ -1,4 +1,3 @@
-import 'package:emd_flutter_identity/src/services/oauth/oauth_requests.dart';
 import 'package:emd_flutter_identity/src/services/oauth/oauth_token_result.dart';
 import 'package:emd_flutter_identity/src/services/oauth_handler.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';

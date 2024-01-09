@@ -17,7 +17,7 @@ class WebAuth with OAuthHandler {
     required String discoveryUrl,
     required String clientId,
     required List<String> scopes,
-    String? redirectUrl,
+    String redirectUrl = 'http://localhost:8080/#/login-callback',
   })  : _scopes = scopes,
         _redirectUrl = redirectUrl,
         _clientId = clientId,
@@ -27,7 +27,7 @@ class WebAuth with OAuthHandler {
   final _storage = const FlutterSecureStorage();
   final String _clientId;
   final List<String> _scopes;
-  final String? _redirectUrl;
+  final String _redirectUrl;
 
   @override
   Future<OAuthTokenResult?> login() async {
@@ -52,6 +52,7 @@ class WebAuth with OAuthHandler {
         authCode: location.queryParameters['code']!,
         rawChallenge: rawChallenge,
         clientId: _clientId,
+        redirectUrl: _redirectUrl,
         tokenUrl: discoveryResponse.tokenEndpoint,
       );
     }
@@ -68,8 +69,7 @@ class WebAuth with OAuthHandler {
     final query = {
       'client_id': _clientId,
       'response_type': 'code',
-      'redirect_uri': _redirectUrl ??
-          '${window.location.protocol}//${window.location.host}/#/login-callback',
+      'redirect_uri': _redirectUrl,
       'code_challenge': challengeHash,
       'code_challenge_method': 'S256',
       'scope': _scopes.join(' '),

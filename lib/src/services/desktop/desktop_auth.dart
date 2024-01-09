@@ -17,14 +17,17 @@ class DesktopAuth with OAuthHandler {
     required String discoveryUrl,
     required String clientId,
     required List<String> scopes,
+    String redirectUrl = 'http://localhost:8080',
     int port = 8080,
   })  : _port = port,
         _discoveryUrl = discoveryUrl,
         _scopes = scopes,
+        _redirectUrl = redirectUrl,
         _clientId = clientId;
 
   final String _discoveryUrl;
   final String _clientId;
+  final String _redirectUrl;
   final List<String> _scopes;
   final int _port;
 
@@ -53,7 +56,7 @@ class DesktopAuth with OAuthHandler {
     final query = {
       'client_id': _clientId,
       'response_type': 'code',
-      'redirect_uri': 'http://localhost:8080/login-callback',
+      'redirect_uri': _redirectUrl,
       'code_challenge': challengeHash,
       'code_challenge_method': 'S256',
       'prompt': 'login',
@@ -75,6 +78,7 @@ class DesktopAuth with OAuthHandler {
     return fetchTokens(
       authCode: code,
       rawChallenge: rawChallenge,
+      redirectUrl: _redirectUrl,
       clientId: _clientId,
       tokenUrl: tokenUrl,
     );

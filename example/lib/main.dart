@@ -6,11 +6,17 @@ import 'package:emd_flutter_identity/emd_flutter_identity.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 var auth = AuthService();
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
+
   auth.init(
     handler: getOAuthHandler(),
   );
@@ -53,6 +59,7 @@ OAuthHandler getOAuthHandler() {
     return WebAuth(
       discoveryUrl: discoveryUrl,
       clientId: clientId,
+      redirectUrl: "http://localhost:8000/login-callback",
       scopes: scopes,
     );
   } else {

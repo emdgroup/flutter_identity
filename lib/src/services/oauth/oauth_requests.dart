@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:emd_flutter_identity/src/services/oauth/oauth_discovery_response.dart';
 import 'package:emd_flutter_identity/src/services/oauth/oauth_token_result.dart';
 import 'package:http/http.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// gets the o auth configuration from the discovery endpoint
 Future<OAuthDiscoveryResponse> getOAuthDiscoveryResponse({
@@ -25,11 +24,12 @@ Future<OAuthTokenResult> fetchTokens({
   required String rawChallenge,
   required String clientId,
   required String tokenUrl,
+  required String redirectUrl,
 }) async {
   final query = {
     'client_id': clientId,
     'code': authCode,
-    'redirect_uri': 'http://localhost:8080/login-callback',
+    'redirect_uri': redirectUrl,
     'code_verifier': rawChallenge,
     'grant_type': 'authorization_code',
   };
