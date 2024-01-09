@@ -1,2 +1,2 @@
 ///Version of the package
-String flutterIdentityVersion = 'v1.0.3';
+String flutterIdentityVersion = 'v1.0.8';

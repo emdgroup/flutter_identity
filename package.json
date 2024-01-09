@@ -4,7 +4,7 @@
     },
     "name": "emd_flutter_identity",
     "description": "A package for EMD SSO",
-    "version": "1.0.5",
+    "version": "1.0.8",
     "private": true,
     "main": "index.js",
     "directories": {
@@ -14,7 +14,12 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "commit": "cz",
-        "release": "standard-version && node dart_version.js"
+        "release": "standard-version"
+    },
+    "standard-version": {
+        "scripts": {
+            "pretag": "node dart_version.js && git add . && git commit -m \"chore: update version in pubspec and lib [skip_ci]\""
+        }
     },
     "repository": {
         "type": "git",
