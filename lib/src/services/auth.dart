@@ -164,10 +164,6 @@ class AuthService extends ChangeNotifier {
 
   /// Log the user out, deletes all tokens
   Future<void> logout() async {
-    final accessToken = await this.accessToken;
-    if (accessToken == null) {
-      throw Exception('No access token to logout');
-    }
     await _storage.delete(key: _prefsAccessToken);
     await _storage.delete(key: _prefsRefreshToken);
     await _storage.delete(key: _prefsIdToken);
