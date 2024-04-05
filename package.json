@@ -4,7 +4,7 @@
     },
     "name": "emd_flutter_identity",
     "description": "A package for EMD SSO",
-    "version": "1.0.9",
+    "version": "1.0.10",
     "private": true,
     "main": "index.js",
     "directories": {
