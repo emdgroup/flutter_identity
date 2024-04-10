@@ -30,6 +30,7 @@ class MobileAuth with OAuthHandler {
         _redirectUrl,
         discoveryUrl: _discoveryUrl,
         scopes: _scopes,
+        preferEphemeralSession: true,
       ),
     );
     if (result == null) {
