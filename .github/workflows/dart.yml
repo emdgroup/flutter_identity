@@ -1,55 +1,50 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: Dart
-
+name: "Pull request"
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
-
+    branches:
+      - main
 jobs:
+  validate_pr:
+    permissions:
+      pull-requests: write
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/semantic_pull_request.yml@v1
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
-
-      - run: flutter --version
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      # Consider passing '--fatal-infos' for slightly stricter analysis.
-      - name: Analyze project source
-        run: flutter analyze
-
-      # Your project will need to have tests in test/ and a dependency on
-      # package:test for this step to succeed. Note that Flutter projects will
-      # want to change this to 'flutter test'.
-      - name: Run tests
-        run: flutter test
-
-      - name: Install node and npm
-        uses: actions/setup-node@v1
+      - uses: actions/checkout@v2
         with:
-          node-version: 14
+          ref: ${{ github.event.pull_request.head.ref }}
 
-      # Add git config to allow git to push tags
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.19.3"
+      - name: Install dependencies
+        run: flutter pub get && cd example && flutter pub get
+      - name: Check licenses
+        run: |
+          dart pub global activate very_good_cli
+          very_good packages check licenses
+
+      - name: Run analyzer
+        run: flutter analyze
+      # Version
+      - name: Install npm dependencies
+        run: npm install
+      # Run release cmd
       - name: Configure git
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run release
+          git fetch --prune --unshallow
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "gh-actions@merckgroup.com"
+      - name: Run release cmd
         run: npm run release
-
-      - name: Push tags
-        run: git push --follow-tags origin main
+      - name: Get new version
+        run: node echo_version.js >> $GITHUB_ENV
+      - name: Push new version
+        run: git push origin HEAD:${{ github.head_ref }}
+      - name: Comment on PR with new version
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: "# New version: ${{ env.VERSION }} 🚀 \n "
