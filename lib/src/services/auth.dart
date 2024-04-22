@@ -74,7 +74,6 @@ class AuthService extends ChangeNotifier {
     if (await _shouldRefresh) {
       await _refreshAccessToken();
     }
-
     return _storage.read(key: _prefsAccessToken);
   }
 
@@ -84,7 +83,6 @@ class AuthService extends ChangeNotifier {
   /// Return a map  of claims in the id token
   Future<Map<String, dynamic>?> get idClaims async {
     final token = await idToken;
-
     return token != null ? getTokenPayload(token) : null;
   }
 
@@ -125,7 +123,10 @@ class AuthService extends ChangeNotifier {
 
   // Persist all tokens in a TokenResponse
   Future<void> _saveTokens(OAuthTokenResult response) async {
+    await _storage.delete(key: _prefsAccessToken);
+    await _storage.delete(key: _prefsAccessTokenExpiry);
     await _storage.write(key: _prefsAccessToken, value: response.accessToken);
+
     await _storage.write(
       key: _prefsAccessTokenExpiry,
       value: DateTime.now()
@@ -134,6 +135,7 @@ class AuthService extends ChangeNotifier {
     );
 
     if (response.refreshToken != null) {
+      await _storage.delete(key: _prefsRefreshToken);
       await _storage.write(
         key: _prefsRefreshToken,
         value: response.refreshToken,
@@ -141,6 +143,7 @@ class AuthService extends ChangeNotifier {
     }
 
     if (response.idToken != null) {
+      await _storage.delete(key: _prefsIdToken);
       await _storage.write(key: _prefsIdToken, value: response.idToken);
     }
   }

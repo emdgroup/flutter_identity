@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.12](https://github.com/emdgroup/flutter_identity/compare/v1.0.10...v1.0.12) (2024-04-22)
+
+
+### Bug Fixes
+
+* token not saving on macos ([ace875e](https://github.com/emdgroup/flutter_identity/commit/ace875e27bc791ab375ff5d7ed10180c66d28a7e))
+* use ephemeral_browser_session ([f7c1651](https://github.com/emdgroup/flutter_identity/commit/f7c1651ed369bbc9d8323d40ac19116c0d0b9316))
+
 ### [1.0.11](https://github.com/emdgroup/flutter_identity/compare/v1.0.10...v1.0.11) (2024-04-10)
 
 
